@@ -43,7 +43,7 @@ Install package locally in package directory
 import intake
 
 stations = ["COI0302", "COI0512"]
-cat = intake.coops_cat(stations)
+cat = intake.open_coops_cat(stations)
 
 # sources in catalog
 print(list(cat))
