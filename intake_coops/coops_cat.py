@@ -7,7 +7,7 @@ from intake.catalog.base import Catalog
 from intake.catalog.local import LocalCatalogEntry
 
 from . import __version__
-from coops import COOPSDataframeSource, COOPSXarraySource
+from .coops import COOPSDataframeSource, COOPSXarraySource
 
 
 class COOPSCatalog(Catalog):

@@ -9,6 +9,10 @@ intake-coops
 
 Intake interface to NOAA CO-OPS data
 
+Uses the [`noaa_coops`](https://github.com/GClunies/noaa_coops) package to read in NOAA CO-OPS data.
+
+Currently limited to currents only with limited selections. Returns an `xarray` Dataset, but there are `intake` Sources for both `DataFrame` and `xarray`.
+
 --------
 
 <p><small>Project based on the <a target="_blank" href="https://github.com/jbusecke/cookiecutter-science-project">cookiecutter science project template</a>.</small></p>
@@ -31,3 +35,22 @@ Activate new environment
 Install package locally in package directory
 
     >>> pip install -e .
+
+
+# Example Usage
+
+```
+import intake
+
+stations = ["COI0302", "COI0512"]
+cat = intake.coops_cat(stations)
+
+# sources in catalog
+print(list(cat))
+
+# look at a source
+print(cat["COI0302"])
+
+# read in data to a Datset
+ds = cat["COI0302"].read()
+```
