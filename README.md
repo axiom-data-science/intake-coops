@@ -12,3 +12,22 @@ Intake interface to NOAA CO-OPS data
 --------
 
 <p><small>Project based on the <a target="_blank" href="https://github.com/jbusecke/cookiecutter-science-project">cookiecutter science project template</a>.</small></p>
+
+
+# Installation
+
+Clone from github (HTTPS or SSH)
+
+    >>> git clone https://github.com/axiom-data-science/intake-coops.git
+
+Install environment file
+
+    >>> conda env create -f environment.yml 
+
+Activate new environment
+
+    >>> conda activate intake-coops
+
+Install package locally in package directory
+
+    >>> pip install -e .
