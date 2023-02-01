@@ -1,0 +1,22 @@
+name: intake-coops
+channels:
+  - conda-forge
+dependencies:
+  # Required for full project functionality (dont remove)
+  - pytest
+  # Examples (remove and add as needed)
+  # - jupyter
+  # - jupyterlab
+  - intake
+  - ipython
+  - xarray
+  - numpy
+  # - scipy
+  # - dask
+  # - netcdf4
+  - pandas
+  # - matplotlib
+  - pip
+  - pip:
+    - git+https://github.com/kthyng/noaa_coops@warning
+
