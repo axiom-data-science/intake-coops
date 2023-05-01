@@ -1,6 +1,9 @@
 from intake.source import base
 import pandas as pd
 import noaa_coops as nc
+import cf_pandas
+import numpy as np
+import xarray as xr
 
 
 class COOPSDataframeSource(base.DataSource):
@@ -104,11 +107,12 @@ class COOPSXarraySource(COOPSDataframeSource):
     partition_access = True
     
     
-    def __init__(self, stationid, metadata={}):
+    def __init__(self, stationid, process_adcp: bool = False, metadata={}):
 
         self._ds = None
         # self.stationid = stationid
         # self.metadata = metadata
+        self._process_adcp = process_adcp
         
         self.source = COOPSDataframeSource(stationid, metadata)
         
@@ -119,9 +123,39 @@ class COOPSXarraySource(COOPSDataframeSource):
 
 
     def _load(self):
-        inds = ['date_time', 'depth']
         df = self.source.read()
+        inds = [df.cf["T"].name, df.cf["Z"].name]
         self._ds = df.reset_index().set_index(inds).sort_index().pivot_table(index=inds).to_xarray()
+        if self._process_adcp:
+            self.process_adcp()
+    
+    def process_adcp(self):
+        theta = self.source.metadata["flood_direction_degrees"]
+        self._ds["u"] = np.cos(np.deg2rad(self._ds.cf["dir"]))*self._ds.cf["speed"]/100
+        self._ds["v"] = np.sin(np.deg2rad(self._ds.cf["dir"]))*self._ds.cf["speed"]/100
+        self._ds["ualong"] = self._ds["u"]*np.cos(np.deg2rad(theta)) + self._ds["v"]*np.sin(np.deg2rad(theta))
+        self._ds["vacross"] = -self._ds["u"]*np.sin(np.deg2rad(theta)) + self._ds["v"]*np.cos(np.deg2rad(theta))
+        self._ds["s"].attrs = {"standard_name": "sea_water_speed",
+                                "units": "m s-1"}
+        self._ds["d"].attrs = {"standard_name": "sea_water_velocity_to_direction",
+                                "units": "degree"}
+        self._ds["u"].attrs = {"standard_name": "eastward_sea_water_velocity",
+                                "units": "m s-1"}
+        self._ds["v"].attrs = {"standard_name": "northward_sea_water_velocity",
+                                "units": "m s-1"}
+        self._ds["ualong"].attrs = {"Long name": "Along channel velocity",
+                                    "units": "m s-1"}
+        self._ds["vacross"].attrs = {"Long name": "Across channel velocity",
+                                    "units": "m s-1"}
+        
+        # calculate subtidal velocities
+        self._ds["ualong_subtidal"] = tidal_filter(self._ds["ualong"])
+        self._ds["vacross_subtidal"] = tidal_filter(self._ds["vacross"])
+
+        
+    def to_dask(self):
+        self.read()
+        return self._ds
 
     def read(self):
         if self._ds is None:
@@ -132,3 +166,86 @@ class COOPSXarraySource(COOPSDataframeSource):
     def _close(self):
         self._ds = None
         self._schema = None
+
+
+class plfilt(object):
+    """
+    pl33 filter class, to remove tides and intertial motions from timeseries
+    USAGE:
+    ------
+    >>> pl33 = plfilt(dt=4.0)   # 33 hr filter
+    >>> pl33d = plfilt(dt=4.0, cutoff_period=72.0)  # 3 day filter
+    dt is the time resolution of the timeseries to be filtered in hours.  Default dt=1
+    cutoff_period defines the timescales to low pass filter. Default cutoff_period=33.0
+    Calling the class instance can have two forms:
+    >>> uf = pl33(u)   # returns a filtered timeseries, uf.  Half the filter length is
+                       # removed from each end of the timeseries
+    >>> uf, tf = pl33(u, t)  # returns a filtered timeseries, uf, plus a new time
+                             # variable over the valid range of the filtered timeseries.
+                             
+    Notes
+    -----
+    Taken from Rob Hetland's octant package.
+    """
+
+    _pl33 = np.array([-0.00027, -0.00114, -0.00211, -0.00317, -0.00427, -0.00537,
+                      -0.00641, -0.00735, -0.00811, -0.00864, -0.00887, -0.00872,
+                      -0.00816, -0.00714, -0.0056 , -0.00355, -0.00097,  0.00213,
+                       0.00574,  0.0098 ,  0.01425,  0.01902,  0.024  ,  0.02911,
+                       0.03423,  0.03923,  0.04399,  0.04842,  0.05237,  0.05576,
+                       0.0585 ,  0.06051,  0.06174,  0.06215,  0.06174,  0.06051,
+                       0.0585 ,  0.05576,  0.05237,  0.04842,  0.04399,  0.03923,
+                       0.03423,  0.02911,  0.024  ,  0.01902,  0.01425,  0.0098 ,
+                       0.00574,  0.00213, -0.00097, -0.00355, -0.0056 , -0.00714,
+                      -0.00816, -0.00872, -0.00887, -0.00864, -0.00811, -0.00735,
+                      -0.00641, -0.00537, -0.00427, -0.00317, -0.00211, -0.00114,
+                      -0.00027], dtype='d')
+
+    _dt = np.linspace(-33, 33, 67)
+
+    def __init__(self, dt=1.0, cutoff_period=33.0):
+
+        if np.isscalar(dt):
+            self.dt = float(dt) * (33.0 / cutoff_period)
+        else:
+            self.dt = np.diff(dt).mean() * (33.0 / cutoff_period)
+
+        filter_time = np.arange(0.0, 33.0, self.dt, dtype='d')
+        self.Nt = len(filter_time)
+        self.filter_time = np.hstack((-filter_time[-1:0:-1], filter_time))
+
+        self.pl33 = np.interp(self.filter_time, self._dt, self._pl33)
+        self.pl33 /= self.pl33.sum()
+
+    def __call__(self, u, t=None, mode='valid'):
+        uf = np.convolve(u, self.pl33, mode=mode)
+        if t is None:
+            return uf
+        else:
+            tf = t[self.Nt-1:-self.Nt+1]
+            return uf, tf
+
+
+def tidal_filter(da_to_filter):
+
+    tkey, zkey = da_to_filter.dims
+
+    # set up tidal filter
+    dt = da_to_filter[tkey][1] - da_to_filter[tkey][0]
+    dt = float(dt/1e9)/3600  # convert nanoseconds to hours
+    pl33 = plfilt(dt=dt)
+
+    ufiltered = []
+    # loop over depths
+    for depth in da_to_filter[zkey]:
+        # can't have any nan's, so fill signal first
+        u_in = da_to_filter.sel(depth=depth).interpolate_na(dim=tkey, method="linear")
+        ufiltered_out, t_out = pl33(u_in, da_to_filter[tkey])
+        ufiltered.append(ufiltered_out)
+
+    ufiltered = np.asarray(ufiltered).T
+    attrs = {key: f"{value}, subtidal" for key, value in da_to_filter.attrs.items() if key != "units"}   
+    u = xr.full_like(da_to_filter, np.nan)
+    u[pl33.Nt-1:-pl33.Nt+1,:] = ufiltered
+    u.attrs = attrs
+    return u

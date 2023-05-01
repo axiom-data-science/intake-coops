@@ -24,9 +24,11 @@ class COOPSCatalog(Catalog):
         self,
         station_list,
         # verbose: bool = False,
+        process_adcp: bool = False,
         name: str = "catalog",
         description: str = "Catalog of NOAA CO-OPS assets.",
         metadata: dict = None,
+        include_source_metadata: bool = True,
         ttl: int = 86400,
         **kwargs,
     ):
@@ -34,6 +36,8 @@ class COOPSCatalog(Catalog):
 
         Parameters
         ----------
+        process_adcp : bool, False
+            If True, for ADCP stations, calculate and save to Dataset along- and across-channel velocities.
         verbose : bool, optional
             Set to True for helpful information.
         ttl : int, optional
@@ -49,6 +53,8 @@ class COOPSCatalog(Catalog):
         """
         
         self.station_list = station_list
+        self.include_source_metadata = include_source_metadata
+        self._process_adcp = process_adcp
 
         # Put together catalog-level stuff
         metadata = metadata or {}
@@ -74,7 +80,13 @@ class COOPSCatalog(Catalog):
 
             args = {
                 "stationid": station_id,
+                "process_adcp": self._process_adcp,
             }
+            
+            if self.include_source_metadata:
+                metadata = COOPSDataframeSource(station_id)._get_dataset_metadata()
+            else:
+                metadata = {}
 
             entry = LocalCatalogEntry(
                 name=station_id,
@@ -82,7 +94,7 @@ class COOPSCatalog(Catalog):
                 driver=plugin,
                 direct_access="allow",
                 args=args,
-                metadata = COOPSDataframeSource(station_id)._get_dataset_metadata(),
+                metadata = metadata,
                 # True,
                 # args,
                 # {},
