@@ -18,7 +18,7 @@ class COOPSCatalog(Catalog):
     """
 
     name = "coops_cat"
-    # version = __version__
+    version = __version__
 
     def __init__(
         self,
@@ -51,7 +51,7 @@ class COOPSCatalog(Catalog):
         kwargs:
             Other input arguments are passed to the intake Catalog class. They can includegetenv, getshell, persist_mode, storage_options, and user_parameters, in addition to some that are surfaced directly in this class.
         """
-        
+
         self.station_list = station_list
         self.include_source_metadata = include_source_metadata
         self._process_adcp = process_adcp
@@ -68,7 +68,7 @@ class COOPSCatalog(Catalog):
         """Find all dataset ids and create catalog."""
 
         self._entries = {}
-        
+
         for station_id in self.station_list:
 
             # if self.verbose:
@@ -82,7 +82,7 @@ class COOPSCatalog(Catalog):
                 "stationid": station_id,
                 "process_adcp": self._process_adcp,
             }
-            
+
             if self.include_source_metadata:
                 metadata = COOPSDataframeSource(station_id)._get_dataset_metadata()
             else:
@@ -90,11 +90,11 @@ class COOPSCatalog(Catalog):
 
             entry = LocalCatalogEntry(
                 name=station_id,
-                description="",#description,
+                description="",  # description,
                 driver=plugin,
                 direct_access="allow",
                 args=args,
-                metadata = metadata,
+                metadata=metadata,
                 # True,
                 # args,
                 # {},
