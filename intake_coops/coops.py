@@ -146,6 +146,18 @@ class COOPSXarraySource(COOPSDataframeSource):
             .pivot_table(index=inds)
             .to_xarray()
         )
+        self._ds["t"].attrs = {"standard_name": "time"}
+        self._ds["depth"].attrs = {
+            "standard_name": "depth",
+            "axis": "Z",
+        }
+        self._ds["longitude"] = self.metadata["minLongitude"]
+        self._ds["longitude"].attrs = {"standard_name": "longitude"}
+        self._ds["latitude"] = self.metadata["minLatitude"]
+        self._ds["latitude"].attrs = {"standard_name": "latitude"}
+        self._ds = self._ds.assign_coords(
+            {"longitude": self._ds["longitude"], "latitude": self._ds["latitude"]}
+        )
         if self._process_adcp:
             self.process_adcp()
 
