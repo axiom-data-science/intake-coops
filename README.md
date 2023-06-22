@@ -26,7 +26,7 @@ Clone from github (HTTPS or SSH)
 
 Install environment file
 
-    >>> conda env create -f environment.yml 
+    >>> conda env create -f environment.yml
 
 Activate new environment
 
@@ -38,6 +38,8 @@ Install package locally in package directory
 
 
 # Example Usage
+
+If you input to `intake.open_coops_cat()` the keyword argument `process_adcp=True`, the ADCP Dataset will contain velocity on u and v components, along- and across-channel components, and along- and across-channel subtidal signal (processed with pl33 tidal filter, also included).
 
 ```
 import intake
@@ -51,6 +53,19 @@ print(list(cat))
 # look at a source
 print(cat["COI0302"])
 
-# read in data to a Datset
+# read in data to a Dataset
 ds = cat["COI0302"].read()
+```
+
+
+### Development
+
+To also develop this package, install additional packages with:
+``` bash
+$ conda install --file requirements-dev.txt
+```
+
+To then check code before committing and pushing it to github, locally run
+``` bash
+$ pre-commit run --all-files
 ```
