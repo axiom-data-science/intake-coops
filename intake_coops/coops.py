@@ -182,6 +182,7 @@ class COOPSXarraySource(COOPSDataframeSource):
         self._ds["vacross"] = -self._ds["u"] * np.sin(np.deg2rad(theta)) + self._ds[
             "v"
         ] * np.cos(np.deg2rad(theta))
+        self._ds["s"] /= 100
         self._ds["s"].attrs = {"standard_name": "sea_water_speed", "units": "m s-1"}
         self._ds["d"].attrs = {
             "standard_name": "sea_water_velocity_to_direction",
