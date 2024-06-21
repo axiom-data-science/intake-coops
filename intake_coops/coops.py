@@ -151,9 +151,9 @@ class COOPSXarraySource(COOPSDataframeSource):
             "standard_name": "depth",
             "axis": "Z",
         }
-        self._ds["longitude"] = self.metadata["minLongitude"]
+        self._ds["longitude"] = self.metadata["lon"]
         self._ds["longitude"].attrs = {"standard_name": "longitude"}
-        self._ds["latitude"] = self.metadata["minLatitude"]
+        self._ds["latitude"] = self.metadata["lat"]
         self._ds["latitude"].attrs = {"standard_name": "latitude"}
         self._ds = self._ds.assign_coords(
             {"longitude": self._ds["longitude"], "latitude": self._ds["latitude"]}
