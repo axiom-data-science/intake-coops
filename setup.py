@@ -9,9 +9,9 @@ setup(
     },
     entry_points={
         "intake.drivers": [
-            "coops-dataframe = intake_coops.coops:COOPSDataframeSource",
-            "coops-xarray = intake_coops.coops:COOPSXarraySource",
-            "coops_cat = intake_coops.coops_cat:COOPSCatalog",
+            "coops-dataframe = intake_coops.coops:COOPSDataframeReader",
+            "coops-xarray = intake_coops.coops:COOPSXarrayReader",
+            "coops_cat = intake_coops.coops_cat:COOPSCatalogReader",
         ]
     },
 )
