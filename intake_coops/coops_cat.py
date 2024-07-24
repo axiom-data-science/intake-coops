@@ -3,22 +3,21 @@ Set up a catalog for NOAA CO-OPS assets.
 """
 
 
-from intake.catalog.base import Catalog
-from intake.catalog.local import LocalCatalogEntry
+from intake.readers.readers import BaseReader
+from intake.readers.entry import Catalog, DataDescription
 
-from . import __version__
-from .coops import COOPSDataframeSource, COOPSXarraySource
+from .coops import COOPSDataframeReader, COOPSXarrayReader
 
 
-class COOPSCatalog(Catalog):
+class COOPSCatalogReader(BaseReader):
     """
-    Makes data sources out of all datasets for a given AXDS data type.
+    Makes data readers out of all datasets for a given AXDS data type.
 
     Have this cover all data types for now, then split out.
     """
 
     name = "coops_cat"
-    version = __version__
+    output_instance = "intake.readers.entry:Catalog"
 
     def __init__(
         self,
@@ -28,8 +27,8 @@ class COOPSCatalog(Catalog):
         name: str = "catalog",
         description: str = "Catalog of NOAA CO-OPS assets.",
         metadata: dict = None,
-        include_source_metadata: bool = True,
-        ttl: int = 86400,
+        include_reader_metadata: bool = True,
+        # ttl: int = 86400,
         **kwargs,
     ):
         """Initialize a NOAA CO-OPS Catalog.
@@ -53,56 +52,46 @@ class COOPSCatalog(Catalog):
         """
 
         self.station_list = station_list
-        self.include_source_metadata = include_source_metadata
+        self.include_reader_metadata = include_reader_metadata
         self._process_adcp = process_adcp
 
         # Put together catalog-level stuff
         metadata = metadata or {}
         # metadata["station_list"] = self.station_list
-
-        super(COOPSCatalog, self).__init__(
-            **kwargs, ttl=ttl, name=name, description=description, metadata=metadata
+        
+        super(COOPSCatalogReader, self).__init__(
+            metadata=metadata,
         )
-
-    def _load(self):
+        # self.name = name
+        # self.metadata = metadata
+        
+    def read(self):
         """Find all dataset ids and create catalog."""
 
-        self._entries = {}
+        plugin = "intake_coops.coops:COOPSXarrayReader"
+
+        entries, aliases = {}, {}
 
         for station_id in self.station_list:
-
-            # if self.verbose:
-            #     print(f"Dataset ID: {dataset_id}")
-
-            # description = f"AXDS dataset_id {dataset_id} of datatype {self.datatype}"
-
-            plugin = COOPSXarraySource
-
             args = {
                 "stationid": station_id,
                 "process_adcp": self._process_adcp,
             }
 
-            if self.include_source_metadata:
-                metadata = COOPSDataframeSource(station_id)._get_dataset_metadata()
+            if self.include_reader_metadata:
+                metadata = COOPSDataframeReader(station_id)._get_dataset_metadata(station_id)
             else:
                 metadata = {}
 
-            entry = LocalCatalogEntry(
-                name=station_id,
-                description="",  # description,
-                driver=plugin,
-                direct_access="allow",
-                args=args,
+            entries[station_id] = DataDescription(
+                plugin,
+                kwargs={**args},
                 metadata=metadata,
-                # True,
-                # args,
-                # {},
-                # {},
-                # {},
-                # "",
-                # getenv=False,
-                # getshell=False,
             )
+            aliases[station_id] = station_id
 
-            self._entries[station_id] = entry
+        cat = Catalog(
+            data=entries,
+            aliases=aliases,
+        )
+        return cat

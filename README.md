@@ -51,11 +51,11 @@ Install package locally in package directory
 
 If you input to `intake.open_coops_cat()` the keyword argument `process_adcp=True`, the ADCP Dataset will contain velocity on u and v components, along- and across-channel components, and along- and across-channel subtidal signal (processed with pl33 tidal filter, also included).
 
-```
-import intake
+```python
+import intake_coops
 
 stations = ["COI0302", "COI0512"]
-cat = intake.open_coops_cat(stations)
+cat = intake_coops.COOPSCatalogReader(stations).read()
 
 # sources in catalog
 print(list(cat))
@@ -65,6 +65,21 @@ print(cat["COI0302"])
 
 # read in data to a Dataset
 ds = cat["COI0302"].read()
+ds
+```
+
+```python
+<xarray.Dataset> Size: 3MB
+Dimensions:    (t: 8399, depth: 13)
+Coordinates:
+  * t          (t) datetime64[ns] 67kB 2003-07-16T00:08:00 ... 2003-08-19T23:...
+  * depth      (depth) float64 104B 0.03 1.04 2.04 3.02 ... 10.03 11.03 12.04
+    longitude  float64 8B -149.9
+    latitude   float64 8B 61.27
+Data variables:
+    b          (t, depth) float64 873kB 13.0 12.0 11.0 10.0 ... 4.0 3.0 2.0 1.0
+    d          (t, depth) float64 873kB 22.0 44.0 55.0 ... 211.0 211.0 212.0
+    s          (t, depth) float64 873kB 37.1 55.6 45.4 21.3 ... 83.0 79.2 76.0
 ```
 
 

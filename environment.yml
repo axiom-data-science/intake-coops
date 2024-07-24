@@ -4,8 +4,9 @@ channels:
 dependencies:
   # Required for full project functionality (dont remove)
   - pytest
-  - cf_pandas
-  - intake
+  - cf-pandas
+  - cf-xarray
+  # - intake
   - ipython
   # - noaa_coops
   - numpy
@@ -13,4 +14,5 @@ dependencies:
   - pip
   - xarray
   - pip:
+    - git+https://github.com/intake/intake.git
     - noaa_coops
