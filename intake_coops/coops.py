@@ -2,7 +2,7 @@
 Reader for CO-OPS data.
 """
 
-from typing import Optional
+from typing import Optional, Union
 import cf_pandas  # noqa: F401
 import cf_xarray  # noqa: F401
 import noaa_coops as nc
