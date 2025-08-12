@@ -89,7 +89,7 @@ class COOPSXarrayReader(COOPSDataframeReader):
 
     output_instance = "xarray:Dataset"
 
-    def _read(self, stationid, process_adcp: bool = False):#, metadata_in: Optional[dict] = None):
+    def _read(self, stationid, process_adcp: Union[str,bool] = False):#, metadata_in: Optional[dict] = None):
         """Read as DataFrame but convert to Dataset."""
         # metadata_in = metadata_in or {}
 
@@ -122,12 +122,21 @@ class COOPSXarrayReader(COOPSDataframeReader):
         )
 
         if process_adcp:
-            ds = self.process_adcp(metadata, ds)
+            ds = self.process_adcp(metadata, ds, process_adcp)
         
         return ds
 
-    def process_adcp(self, metadata, ds, process_uv=False, process_along=False, process_subtidal=False):
+    def process_adcp(self, metadata, ds, process_adcp):
         """Process ADCP data.
+
+        Parameters
+        ----------
+        process_adcp: str, bool
+
+            * "process_uv": process adcp to include `u`/`v` in dataset
+            * "process_along": process adcp to include `u`/`v` and `ualong`/`vacross` in dataset
+            * "process_subtidal": process adcp to include `u`/`v`, `ualong`/`vacross`, and `ualong_subtidal`/`vacross_subtidal` in dataset
+            * True is equivalent to "process_subtidal"
 
         Returns
         -------
@@ -135,7 +144,10 @@ class COOPSXarrayReader(COOPSDataframeReader):
             With u and v, ualong and vacross, and subtidal versions ualong_subtidal, vacross_subtidal
         """
 
-        if process_uv or process_along or process_subtidal:
+        if process_adcp == True:
+            process_adcp = "process_subtidal"
+
+        if process_adcp in ["process_uv", "process_along", "process_subtidal"]:
             ds["u"] = (
                 np.cos(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
             )
@@ -157,7 +169,7 @@ class COOPSXarrayReader(COOPSDataframeReader):
                 "units": "m s-1",
             }
 
-        if process_along or process_subtidal:
+        if process_adcp in ["process_along", "process_subtidal"]:
             theta = metadata["deployments"]["flood_direction_degrees"]
             ds["ualong"] = ds["u"] * np.cos(np.deg2rad(theta)) + ds[
                 "v"
@@ -174,7 +186,7 @@ class COOPSXarrayReader(COOPSDataframeReader):
                 "units": "m s-1",
             }
 
-        if process_subtidal:
+        if process_adcp == "process_subtidal":
             # calculate subtidal velocities
             ds["ualong_subtidal"] = tidal_filter(ds["ualong"])
             ds["vacross_subtidal"] = tidal_filter(ds["vacross"])
