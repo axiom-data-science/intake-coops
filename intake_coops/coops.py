@@ -126,7 +126,7 @@ class COOPSXarrayReader(COOPSDataframeReader):
         
         return ds
 
-    def process_adcp(self, metadata, ds):
+    def process_adcp(self, metadata, ds, process_uv=False, process_along=False, process_subtidal=False):
         """Process ADCP data.
 
         Returns
@@ -134,45 +134,50 @@ class COOPSXarrayReader(COOPSDataframeReader):
         Dataset
             With u and v, ualong and vacross, and subtidal versions ualong_subtidal, vacross_subtidal
         """
-        theta = metadata["deployments"]["flood_direction_degrees"]
-        ds["u"] = (
-            np.cos(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
-        )
-        ds["v"] = (
-            np.sin(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
-        )
-        ds["ualong"] = ds["u"] * np.cos(np.deg2rad(theta)) + ds[
-            "v"
-        ] * np.sin(np.deg2rad(theta))
-        ds["vacross"] = -ds["u"] * np.sin(np.deg2rad(theta)) + ds[
-            "v"
-        ] * np.cos(np.deg2rad(theta))
-        ds["s"] /= 100
-        ds["s"].attrs = {"standard_name": "sea_water_speed", "units": "m s-1"}
-        ds["d"].attrs = {
-            "standard_name": "sea_water_velocity_to_direction",
-            "units": "degree",
-        }
-        ds["u"].attrs = {
-            "standard_name": "eastward_sea_water_velocity",
-            "units": "m s-1",
-        }
-        ds["v"].attrs = {
-            "standard_name": "northward_sea_water_velocity",
-            "units": "m s-1",
-        }
-        ds["ualong"].attrs = {
-            "Long name": "Along channel velocity",
-            "units": "m s-1",
-        }
-        ds["vacross"].attrs = {
-            "Long name": "Across channel velocity",
-            "units": "m s-1",
-        }
 
-        # calculate subtidal velocities
-        ds["ualong_subtidal"] = tidal_filter(ds["ualong"])
-        ds["vacross_subtidal"] = tidal_filter(ds["vacross"])
+        if process_uv or process_along or process_subtidal:
+            ds["u"] = (
+                np.cos(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
+            )
+            ds["v"] = (
+                np.sin(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
+            )
+            ds["s"] /= 100
+            ds["s"].attrs = {"standard_name": "sea_water_speed", "units": "m s-1"}
+            ds["d"].attrs = {
+                "standard_name": "sea_water_velocity_to_direction",
+                "units": "degree",
+            }
+            ds["u"].attrs = {
+                "standard_name": "eastward_sea_water_velocity",
+                "units": "m s-1",
+            }
+            ds["v"].attrs = {
+                "standard_name": "northward_sea_water_velocity",
+                "units": "m s-1",
+            }
+
+        if process_along or process_subtidal:
+            theta = metadata["deployments"]["flood_direction_degrees"]
+            ds["ualong"] = ds["u"] * np.cos(np.deg2rad(theta)) + ds[
+                "v"
+            ] * np.sin(np.deg2rad(theta))
+            ds["vacross"] = -ds["u"] * np.sin(np.deg2rad(theta)) + ds[
+                "v"
+            ] * np.cos(np.deg2rad(theta))
+            ds["ualong"].attrs = {
+                "Long name": "Along channel velocity",
+                "units": "m s-1",
+            }
+            ds["vacross"].attrs = {
+                "Long name": "Across channel velocity",
+                "units": "m s-1",
+            }
+
+        if process_subtidal:
+            # calculate subtidal velocities
+            ds["ualong_subtidal"] = tidal_filter(ds["ualong"])
+            ds["vacross_subtidal"] = tidal_filter(ds["vacross"])
         
         return ds
 
