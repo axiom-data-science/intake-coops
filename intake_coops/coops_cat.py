@@ -2,6 +2,7 @@
 Set up a catalog for NOAA CO-OPS assets.
 """
 
+from typing import Union
 
 from intake.readers.readers import BaseReader
 from intake.readers.entry import Catalog, DataDescription
