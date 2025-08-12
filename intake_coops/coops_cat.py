@@ -23,7 +23,7 @@ class COOPSCatalogReader(BaseReader):
         self,
         station_list,
         # verbose: bool = False,
-        process_adcp: bool = False,
+        process_adcp: Union[str,bool] = False,
         name: str = "catalog",
         description: str = "Catalog of NOAA CO-OPS assets.",
         metadata: dict = None,
@@ -35,8 +35,13 @@ class COOPSCatalogReader(BaseReader):
 
         Parameters
         ----------
-        process_adcp : bool, False
-            If True, for ADCP stations, calculate and save to Dataset along- and across-channel velocities.
+        process_adcp: str, bool
+
+            * "process_uv": process adcp to include `u`/`v` in dataset
+            * "process_along": process adcp to include `u`/`v` and `ualong`/`vacross` in dataset
+            * "process_subtidal": process adcp to include `u`/`v`, `ualong`/`vacross`, and `ualong_subtidal`/`vacross_subtidal` in dataset
+            * True is equivalent to "process_subtidal"
+
         verbose : bool, optional
             Set to True for helpful information.
         ttl : int, optional
