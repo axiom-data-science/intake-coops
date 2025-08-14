@@ -148,11 +148,13 @@ class COOPSXarrayReader(COOPSDataframeReader):
             process_adcp = "process_subtidal"
 
         if process_adcp in ["process_uv", "process_along", "process_subtidal"]:
+            # dir is "dir (True)" and looks like it is compass oriented
+            # e.g. https://tidesandcurrents.noaa.gov/cdata/DataPlot?id=COI0501&bin=9&bdate=20050529&edate=20050530&unit=1&timeZone=UTC&view=data
             ds["u"] = (
-                np.cos(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
+                np.sin(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
             )
             ds["v"] = (
-                np.sin(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
+                np.cos(np.deg2rad(ds.cf["dir"])) * ds.cf["speed"] / 100
             )
             ds["s"] /= 100
             ds["s"].attrs = {"standard_name": "sea_water_speed", "units": "m s-1"}
